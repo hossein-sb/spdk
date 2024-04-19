@@ -7552,17 +7552,19 @@ bdev_nvme_writev(struct nvme_bdev_io *bio, struct iovec *iov, int iovcnt,
 
 		rc = spdk_nvme_ns_cmd_writev_ext(ns, qpair, lba, lba_count,
 						 bdev_nvme_writev_done, bio,
+						 spdk_bdev_call_augmented_transmit, bio,
 						 bdev_nvme_queued_reset_sgl,
 						 bdev_nvme_queued_next_sge,
 						 &bio->ext_opts);
 	} else if (iovcnt == 1) {
 		rc = spdk_nvme_ns_cmd_write_with_md(ns, qpair, iov[0].iov_base,
 						    md, lba, lba_count, bdev_nvme_writev_done,
-						    bio, flags, 0, 0);
+						    bio, spdk_bdev_call_augmented_transmit, bio,flags, 0, 0);
 	} else {
 		rc = spdk_nvme_ns_cmd_writev_with_md(ns, qpair, lba, lba_count,
-						     bdev_nvme_writev_done, bio, flags,
-						     bdev_nvme_queued_reset_sgl,
+						     bdev_nvme_writev_done, bio, 
+							 spdk_bdev_call_augmented_transmit, bio,
+							 flags, bdev_nvme_queued_reset_sgl,
 						     bdev_nvme_queued_next_sge, md, 0, 0);
 	}
 
@@ -7684,7 +7686,7 @@ bdev_nvme_comparev_and_writev(struct nvme_bdev_io *bio, struct iovec *cmp_iov, i
 	flags |= SPDK_NVME_IO_FLAGS_FUSE_SECOND;
 
 	rc = spdk_nvme_ns_cmd_writev_with_md(ns, qpair, lba, lba_count,
-					     bdev_nvme_comparev_and_writev_done, bio, flags,
+					     bdev_nvme_comparev_and_writev_done, bio, NULL, NULL, flags,
 					     bdev_nvme_queued_reset_fused_sgl, bdev_nvme_queued_next_fused_sge, md, 0, 0);
 	if (rc != 0 && rc != -ENOMEM) {
 		SPDK_ERRLOG("write failed: rc = %d\n", rc);

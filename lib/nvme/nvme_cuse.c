@@ -412,7 +412,7 @@ cuse_nvme_submit_io_write_cb(struct spdk_nvme_ctrlr *ctrlr, uint32_t nsid, void 
 	rc = spdk_nvme_ns_cmd_write_with_md(ns, ctrlr->external_io_msgs_qpair, ctx->data, ctx->metadata,
 					    ctx->lba, /* LBA start */
 					    ctx->lba_count, /* number of LBAs */
-					    cuse_nvme_submit_io_write_done, ctx, 0,
+					    cuse_nvme_submit_io_write_done, ctx, NULL, NULL, 0,
 					    ctx->appmask, ctx->apptag);
 
 	if (rc != 0) {

@@ -378,6 +378,9 @@ struct nvme_request {
 
 	/** Sequence of accel operations associated with this request */
 	void				*accel_sequence;
+
+	spdk_nvme_transmit_cb 	transmit_cb;
+	void					*transmit_cb_arg;
 };
 
 struct nvme_completion_poll_status {
@@ -1268,7 +1271,7 @@ typedef int (*spdk_nvme_parse_ana_log_page_cb)(
 int	nvme_ctrlr_parse_ana_log_page(struct spdk_nvme_ctrlr *ctrlr,
 				      spdk_nvme_parse_ana_log_page_cb cb_fn, void *cb_arg);
 
-#define NVME_INIT_REQUEST(req, _cb_fn, _cb_arg, _payload, _payload_size, _md_size)	\
+#define NVME_INIT_REQUEST(req, _cb_fn, _cb_arg, _trans_cb, _trans_cb_arg, _payload, _payload_size, _md_size)	\
 	do {						\
 		req->cb_fn = _cb_fn;			\
 		req->cb_arg = _cb_arg;			\
@@ -1278,12 +1281,14 @@ int	nvme_ctrlr_parse_ana_log_page(struct spdk_nvme_ctrlr *ctrlr,
 		req->pid = g_spdk_nvme_pid;		\
 		req->submit_tick = 0;			\
 		req->accel_sequence = NULL;		\
+		req->transmit_cb = _trans_cb;		\
+		req->transmit_cb_arg = _trans_cb_arg; \
 	} while (0);
 
 static inline struct nvme_request *
 nvme_allocate_request(struct spdk_nvme_qpair *qpair,
 		      const struct nvme_payload *payload, uint32_t payload_size, uint32_t md_size,
-		      spdk_nvme_cmd_cb cb_fn, void *cb_arg)
+		      spdk_nvme_cmd_cb cb_fn, void *cb_arg, spdk_nvme_transmit_cb transmit_cb, void* transmit_cb_arg)
 {
 	struct nvme_request *req;
 
@@ -1308,7 +1313,7 @@ nvme_allocate_request(struct spdk_nvme_qpair *qpair,
 	 */
 	memset(req, 0, offsetof(struct nvme_request, payload_size));
 
-	NVME_INIT_REQUEST(req, cb_fn, cb_arg, *payload, payload_size, md_size);
+	NVME_INIT_REQUEST(req, cb_fn, cb_arg, transmit_cb, transmit_cb_arg, *payload, payload_size, md_size);
 
 	return req;
 }
@@ -1322,7 +1327,7 @@ nvme_allocate_request_contig(struct spdk_nvme_qpair *qpair,
 
 	payload = NVME_PAYLOAD_CONTIG(buffer, NULL);
 
-	return nvme_allocate_request(qpair, &payload, payload_size, 0, cb_fn, cb_arg);
+	return nvme_allocate_request(qpair, &payload, payload_size, 0, cb_fn, cb_arg, NULL, NULL);
 }
 
 static inline struct nvme_request *

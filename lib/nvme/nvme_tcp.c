@@ -847,6 +847,11 @@ static inline bool
 nvme_tcp_req_complete_safe(struct nvme_tcp_req *tcp_req)
 {
 	if (!(tcp_req->ordering.bits.send_ack && tcp_req->ordering.bits.data_recv)) {
+		if (tcp_req->ordering.bits.send_ack) {	
+			if (tcp_req->req->transmit_cb) {
+				tcp_req->req->transmit_cb(tcp_req->req->transmit_cb_arg, true);
+			}
+		}
 		return false;
 	}
 

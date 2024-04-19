@@ -1136,13 +1136,13 @@ spdk_fio_queue(struct thread_data *td, struct io_u *io_u)
 					ext_opts.apptag = dif_ctx->app_tag;
 					ext_opts.apptag_mask = dif_ctx->apptag_mask;
 					rc = spdk_nvme_ns_cmd_writev_ext(ns, fio_qpair->qpair, lba, lba_count,
-									 spdk_fio_completion_cb, fio_req,
+									 spdk_fio_completion_cb, fio_req, NULL, NULL,
 									 spdk_nvme_io_reset_sgl, spdk_nvme_io_next_sge, &ext_opts);
 					break;
 				}
 #endif
 				rc = spdk_nvme_ns_cmd_writev_with_md(ns, fio_qpair->qpair, lba,
-								     lba_count, spdk_fio_completion_cb, fio_req, fio_qpair->io_flags,
+								     lba_count, spdk_fio_completion_cb, fio_req, NULL, NULL, fio_qpair->io_flags,
 								     spdk_nvme_io_reset_sgl, spdk_nvme_io_next_sge, md_buf,
 								     dif_ctx->apptag_mask, dif_ctx->app_tag);
 			} else {

@@ -10352,3 +10352,63 @@ SPDK_TRACE_REGISTER_FN(bdev_trace, "bdev", TRACE_GROUP_BDEV)
 	spdk_trace_tpoint_register_relation(TRACE_BDEV_NVME_IO_START, OBJECT_BDEV_IO, 0);
 	spdk_trace_tpoint_register_relation(TRACE_BDEV_NVME_IO_DONE, OBJECT_BDEV_IO, 0);
 }
+
+static void bdev_internal_augmented_write_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg)
+{
+	spdk_bdev_write_augmented_arg_t *augmented_arg = cb_arg;
+	if (augmented_arg->is_transmit_called == false) {
+		if (augmented_arg->transmit_cb)
+			augmented_arg->transmit_cb(bdev_io, success, augmented_arg->transmit_arg);
+		augmented_arg->is_transmit_called = true;
+	}
+	
+	if (augmented_arg->org_cb)
+		augmented_arg->org_cb(bdev_io, success, augmented_arg->org_arg);
+	free(augmented_arg);
+}
+
+/**
+ * 
+*/
+bool spdk_bdev_is_augmented_cb(spdk_bdev_io_completion_cb augmented_cb) 
+{
+	if (augmented_cb == bdev_internal_augmented_write_cb)
+		return true;
+	
+	return false;
+}
+
+void spdk_bdev_call_augmented_transmit(void *bio, bool success)
+{
+	if (!bio)
+		return;		
+	struct spdk_bdev_io *bdev_io = spdk_bdev_io_from_ctx(bio);
+	if(spdk_bdev_is_augmented_cb(bdev_io->internal.cb) == false)
+		return;
+	
+	spdk_bdev_write_augmented_arg_t *augmented_arg = bdev_io->internal.caller_ctx;
+	if (augmented_arg->is_transmit_called)
+		return;
+	
+	if (augmented_arg->transmit_cb)
+		augmented_arg->transmit_cb(bdev_io, success, augmented_arg->transmit_arg);
+	augmented_arg->is_transmit_called = true;
+}
+
+void spdk_bdev_augment_write_cb_by_ontransmit_cb(spdk_bdev_io_completion_cb origin_cb, void *origin_cb_arg,
+												 spdk_bdev_io_transmit_completion_cb transmit_cb, void *transmit_cb_arg,
+												 spdk_bdev_io_completion_cb *ret_cb, void **ret_cb_arg)
+{
+	spdk_bdev_write_augmented_arg_t *augmented_arg;
+	augmented_arg = malloc(sizeof(spdk_bdev_write_augmented_arg_t));
+
+	augmented_arg->is_transmit_called 	= false;
+	augmented_arg->org_cb 				= origin_cb;
+	augmented_arg->org_arg 				= origin_cb_arg;
+	augmented_arg->transmit_cb 			= transmit_cb;
+	augmented_arg->transmit_arg 		= transmit_cb_arg;
+
+	*ret_cb 	= bdev_internal_augmented_write_cb;
+	*ret_cb_arg = augmented_arg;
+	
+}

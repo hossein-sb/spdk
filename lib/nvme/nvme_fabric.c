@@ -558,7 +558,7 @@ nvme_fabric_qpair_connect_async(struct spdk_nvme_qpair *qpair, uint32_t num_entr
 	snprintf(nvmf_data->hostnqn, sizeof(nvmf_data->hostnqn), "%s", ctrlr->opts.hostnqn);
 	snprintf(nvmf_data->subnqn, sizeof(nvmf_data->subnqn), "%s", ctrlr->trid.subnqn);
 
-	NVME_INIT_REQUEST(req, nvme_completion_poll_cb, status, NVME_PAYLOAD_CONTIG(nvmf_data, NULL),
+	NVME_INIT_REQUEST(req, nvme_completion_poll_cb, status, NULL, NULL, NVME_PAYLOAD_CONTIG(nvmf_data, NULL),
 			  sizeof(*nvmf_data), 0);
 
 	rc = nvme_qpair_submit_request(qpair, req);

@@ -303,7 +303,7 @@ check_fdp_write(struct spdk_nvme_ns *ns, struct spdk_nvme_qpair *qpair)
 				   SPDK_MALLOC_DMA);
 	assert(req->contig);
 
-	ret = spdk_nvme_ns_cmd_writev_ext(ns, qpair, lba, lba_count, cmd_completion, req,
+	ret = spdk_nvme_ns_cmd_writev_ext(ns, qpair, lba, lba_count, cmd_completion, req, NULL, NULL,
 					  nvme_req_reset_sgl, nvme_req_next_sge, &ext_opts);
 
 	if (ret) {

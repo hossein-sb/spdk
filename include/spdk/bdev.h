@@ -152,6 +152,16 @@ typedef void (*spdk_bdev_io_completion_cb)(struct spdk_bdev_io *bdev_io,
 		bool success,
 		void *cb_arg);
 
+typedef spdk_bdev_io_completion_cb spdk_bdev_io_transmit_completion_cb;
+
+typedef struct spdk_bdev_write_augmented_arg {
+	spdk_bdev_io_completion_cb org_cb;
+	void *org_arg;
+	spdk_bdev_io_transmit_completion_cb transmit_cb;
+	void *transmit_arg;
+	bool is_transmit_called;
+}spdk_bdev_write_augmented_arg_t;
+
 struct spdk_bdev_io_error_stat;
 
 struct spdk_bdev_io_stat {
@@ -2140,6 +2150,33 @@ void spdk_bdev_for_each_channel_continue(struct spdk_bdev_channel_iter *i, int s
  */
 void spdk_bdev_for_each_channel(struct spdk_bdev *bdev, spdk_bdev_for_each_channel_msg fn,
 				void *ctx, spdk_bdev_for_each_channel_done cpl);
+
+/**
+ * Check if the augmented_cb is an write augmented cb.
+ * For more info refer to spdk_bdev_augment_write_cb_by_ontransmit_cb definition.
+*/
+bool spdk_bdev_is_augmented_cb(spdk_bdev_io_completion_cb augmented_cb);
+
+/**
+ * Call transmit callback function only if the call back is augmented and not being called before.
+*/
+void spdk_bdev_call_augmented_transmit(void *bio, bool success);
+
+/**
+ * This function will encapsulate original and transmit callback functions to ret_cb in ordrder to
+ * enable bdev modules that support 'on transmit callback' to call transmit_cb once the io is being sent out
+ * without waiting for io response from target. This feature is useful in such a scneario that the underlaying bdev
+ * module sends out its request to another bdev module or through tcp protocol.
+ * @param origin_cb original callback
+ * @param origin_cb_arg original callback argument
+ * @param transmit_cb on transmit callback
+ * @param transmit_cb_arg on transmit callback argument
+ * @param ret_cb the result encapsulated callback will be stored here
+ * @param ret_cb_arg the result encapsulated callback argument will be stored here
+*/
+void spdk_bdev_augment_write_cb_by_ontransmit_cb(spdk_bdev_io_completion_cb origin_cb, void *origin_cb_arg,
+												 spdk_bdev_io_transmit_completion_cb transmit_cb, void *transmit_cb_arg,
+												 spdk_bdev_io_completion_cb *ret_cb, void **ret_cb_arg);
 
 #ifdef __cplusplus
 }

@@ -1407,6 +1407,15 @@ bool spdk_nvme_ctrlr_is_feature_supported(struct spdk_nvme_ctrlr *ctrlr, uint8_t
  */
 typedef void (*spdk_nvme_cmd_cb)(void *ctx, const struct spdk_nvme_cpl *cpl);
 
+
+/**
+ * Signature for callback function invoked once the request is sent out.
+ *
+ * \param ctx Callback context provided when the request was transmitted
+ * \param success Wether the transmission was successful
+ */
+typedef void (*spdk_nvme_transmit_cb)(void *ctx, bool success);
+
 /**
  * Signature for callback function invoked when an asynchronous event request
  * command is completed.
@@ -3163,8 +3172,9 @@ int spdk_nvme_ns_cmd_write(struct spdk_nvme_ns *ns, struct spdk_nvme_qpair *qpai
  */
 int spdk_nvme_ns_cmd_writev(struct spdk_nvme_ns *ns, struct spdk_nvme_qpair *qpair,
 			    uint64_t lba, uint32_t lba_count,
-			    spdk_nvme_cmd_cb cb_fn, void *cb_arg, uint32_t io_flags,
-			    spdk_nvme_req_reset_sgl_cb reset_sgl_fn,
+			    spdk_nvme_cmd_cb cb_fn, void *cb_arg, 
+				spdk_nvme_transmit_cb transmit_cb, void * transmit_cb_arg,
+				uint32_t io_flags, spdk_nvme_req_reset_sgl_cb reset_sgl_fn,
 			    spdk_nvme_req_next_sge_cb next_sge_fn);
 
 /**
@@ -3180,6 +3190,8 @@ int spdk_nvme_ns_cmd_writev(struct spdk_nvme_ns *ns, struct spdk_nvme_qpair *qpa
  * \param lba_count length (in sectors) for the write operation
  * \param cb_fn callback function to invoke when the I/O is completed
  * \param cb_arg argument to pass to the callback function
+ * \param transmit_cb callback function to invoke when the I/O is sent out
+ * \param transmit_cb_arg argument to pass to the transmit_cb callback function
  * \param io_flags set flags, defined in nvme_spec.h, for this I/O
  * \param reset_sgl_fn callback function to reset scattered payload
  * \param next_sge_fn callback function to iterate each scattered
@@ -3196,8 +3208,9 @@ int spdk_nvme_ns_cmd_writev(struct spdk_nvme_ns *ns, struct spdk_nvme_qpair *qpa
  */
 int spdk_nvme_ns_cmd_writev_with_md(struct spdk_nvme_ns *ns, struct spdk_nvme_qpair *qpair,
 				    uint64_t lba, uint32_t lba_count,
-				    spdk_nvme_cmd_cb cb_fn, void *cb_arg, uint32_t io_flags,
-				    spdk_nvme_req_reset_sgl_cb reset_sgl_fn,
+				    spdk_nvme_cmd_cb cb_fn, void *cb_arg, 
+					spdk_nvme_transmit_cb transmit_cb, void * transmit_cb_arg,
+					uint32_t io_flags, spdk_nvme_req_reset_sgl_cb reset_sgl_fn,
 				    spdk_nvme_req_next_sge_cb next_sge_fn, void *metadata,
 				    uint16_t apptag_mask, uint16_t apptag);
 
@@ -3214,6 +3227,8 @@ int spdk_nvme_ns_cmd_writev_with_md(struct spdk_nvme_ns *ns, struct spdk_nvme_qp
  * \param lba_count length (in sectors) for the write operation
  * \param cb_fn callback function to invoke when the I/O is completed
  * \param cb_arg argument to pass to the callback function
+ * \param transmit_cb callback function to invoke when the I/O is sent out
+ * \param transmit_cb_arg argument to pass to the transmit_cb callback function
  * \param reset_sgl_fn callback function to reset scattered payload
  * \param next_sge_fn callback function to iterate each scattered
  * payload memory segment
@@ -3230,6 +3245,7 @@ int spdk_nvme_ns_cmd_writev_with_md(struct spdk_nvme_ns *ns, struct spdk_nvme_qp
 int spdk_nvme_ns_cmd_writev_ext(struct spdk_nvme_ns *ns, struct spdk_nvme_qpair *qpair,
 				uint64_t lba, uint32_t lba_count,
 				spdk_nvme_cmd_cb cb_fn, void *cb_arg,
+				spdk_nvme_transmit_cb transmit_cb, void * transmit_cb_arg,
 				spdk_nvme_req_reset_sgl_cb reset_sgl_fn,
 				spdk_nvme_req_next_sge_cb next_sge_fn,
 				struct spdk_nvme_ns_cmd_ext_io_opts *opts);
@@ -3250,6 +3266,8 @@ int spdk_nvme_ns_cmd_writev_ext(struct spdk_nvme_ns *ns, struct spdk_nvme_qpair 
  * \param lba_count Length (in sectors) for the write operation.
  * \param cb_fn Callback function to invoke when the I/O is completed.
  * \param cb_arg Argument to pass to the callback function.
+ * \param transmit_cb callback function to invoke when the I/O is sent out
+ * \param transmit_cb_arg argument to pass to the transmit_cb callback function
  * \param io_flags Set flags, defined by the SPDK_NVME_IO_FLAGS_* entries in
  * spdk/nvme_spec.h, for this I/O.
  * \param apptag_mask Application tag mask.
@@ -3262,9 +3280,9 @@ int spdk_nvme_ns_cmd_writev_ext(struct spdk_nvme_ns *ns, struct spdk_nvme_qpair 
  */
 int spdk_nvme_ns_cmd_write_with_md(struct spdk_nvme_ns *ns, struct spdk_nvme_qpair *qpair,
 				   void *payload, void *metadata,
-				   uint64_t lba, uint32_t lba_count, spdk_nvme_cmd_cb cb_fn,
-				   void *cb_arg, uint32_t io_flags,
-				   uint16_t apptag_mask, uint16_t apptag);
+				   uint64_t lba, uint32_t lba_count, spdk_nvme_cmd_cb cb_fn, void *cb_arg, 
+				   spdk_nvme_transmit_cb transmit_cb, void * transmit_cb_arg,
+				   uint32_t io_flags, uint16_t apptag_mask, uint16_t apptag);
 
 /**
  * Submit a write zeroes I/O to the specified NVMe namespace.
